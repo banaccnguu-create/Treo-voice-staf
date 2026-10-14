@@ -16,27 +16,23 @@ const GUILD_ID = '1537507317459718289';
 const CHANNEL_ID = '1559888715814412299';
 
 async function connectToVoice() {
-  try {
-    const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
-    if (!guild) return console.log('[-] Tài khoản chưa tham gia Server này!');
+    try {
+        const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
+        if (!guild) return console.log('[-] Tài khoản chưa tham gia Server này!');
 
-    const channel = await client.channels.fetch(CHANNEL_ID).catch(() => null);
-    if (!channel) return console.log('[-] Không tìm thấy kênh voice (kiểm tra lại ID hoặc quyền xem kênh)!');
+        const channel = await client.channels.fetch(CHANNEL_ID).catch(() => null);
+        if (!channel) return console.log('[-] Không tìm thấy kênh voice (kiểm tra lại ID hoặc quyền xem kênh)!');
 
-    console.log(`[*] Đang thử kết nối vào phòng voice: ${channel.name}...`);
+        await client.voice.joinChannel(channel, {
+            selfMute: false,
+            selfDeaf: false,
+            selfVideo: false,
+        });
 
-    await client.voice.joinChannel(channel, {
-      selfMute: false,
-      selfDeaf: false,
-      selfVideo: false,
-      maxHandshakeRequests: 10
-    });
-
-    console.log(`[+] Đã kết nối thành công vào phòng: ${channel.name}`);
-  } catch (error) {
-    console.error('[-] Lỗi kết nối:', error.message);
-    setTimeout(connectToVoice, 5000);
-  }
+        console.log(`[+] Đã kết nối thành công vào phòng: ${channel.name}`);
+    } catch (error) {
+        console.error('[-] Lỗi kết nối:', error.message);
+    }
 }
 
 client.on('ready', async () => {
