@@ -9,8 +9,11 @@ const server = http.createServer((req, res) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server online port ${PORT}`));
 
-// Khởi tạo selfbot client
-const client = new Client({ checkUpdate: false });
+// Khởi tạo selfbot với cấu hình tối ưu để bypass lỗi đứng mạng trên Cloud
+const client = new Client({
+    checkUpdate: false,
+    intents: ["GUILDS", "GUILD_VOICE_STATES"]
+});
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const GUILD_ID = '1537507317459718289';
@@ -36,7 +39,6 @@ async function connectToVoice() {
             selfMute: false,
             selfDeaf: false,
             selfVideo: false,
-            maxHandshakeRequests: 10
         });
 
         console.log(`[+]: Đã kết nối thành công vào phòng: ${channel.name}`);
@@ -47,21 +49,15 @@ async function connectToVoice() {
 }
 
 client.on('ready', async () => {
-    console.log(`[+]: Đã đăng nhập: ${client.user.tag}`);
+    console.log(`[+]: Đã đăng nhập tài khoản: ${client.user.tag}`);
     await connectToVoice();
 });
 
-// Tự động vào lại nếu bị rớt voice
 client.on('voiceStateUpdate', (oldState, newState) => {
     if (newState.id === client.user.id && !newState.channelId) {
         console.log('[-]: Rớt voice, đang kết nối lại...');
         setTimeout(connectToVoice, 2000);
     }
 });
-
-// Giữ ping kết nối mạng
-setInterval(() => {
-    if (client.ws) client.ws.ping;
-}, 25000);
 
 client.login(TOKEN);
