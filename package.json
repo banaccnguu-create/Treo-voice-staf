@@ -1,5 +1,6 @@
 {
   "dependencies": {
-    "discord.js-selfbot-v13": "latest"
+    "discord.js-selfbot-v13": "latest",
+    "opusscript": "^0.0.8"
   }
 }
