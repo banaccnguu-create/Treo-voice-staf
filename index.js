@@ -15,27 +15,34 @@ const TOKEN = process.env.DISCORD_TOKEN;
 const GUILD_ID = '1537507317459718289';
 const CHANNEL_ID = '1559861570539102308';
 
+if (!TOKEN) {
+    console.log('[-] LỖI: Chưa cấu hình DISCORD_TOKEN trong Environment của Render!');
+}
+
 client.on('ready', async () => {
-    console.log(`[+] Đã đăng nhập thành công: ${client.user.tag}`);
+    console.log(`[+] Đã đăng nhập thành công tài khoản: ${client.user.tag}`);
     
     try {
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
         if (!guild) {
-            console.log('[-] Không tìm thấy Server!');
+            console.log('[-] Không tìm thấy Server! Kiểm tra lại ID Server.');
             return;
         }
 
         const channel = await client.channels.fetch(CHANNEL_ID).catch(() => null);
-        if (!channel || channel.type !== 'GUILD_STAGE_VOICE' && channel.type !== 'GUILD_VOICE') {
-            console.log('[-] Không tìm thấy kênh voice!');
+        if (!channel) {
+            console.log('[-] Không tìm thấy kênh voice! Kiểm tra lại ID Kênh.');
             return;
         }
 
         await channel.join();
-        console.log(`[+] Đã kết nối vào phòng voice thành công!`);
+        console.log(`[+] Đã kết nối vào phòng voice thành công: ${channel.name}`);
     } catch (error) {
-        console.log('[-] Lỗi kết nối voice:', error.message);
+        console.log('[-] Lỗi join voice:', error.message);
     }
 });
 
-client.login(TOKEN);
+// Bắt lỗi nếu login thất bại
+client.login(TOKEN).catch(err => {
+    console.log('[-] LỖI ĐĂNG NHẬP (Token sai hoặc bị khóa):', err.message);
+});
