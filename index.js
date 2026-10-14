@@ -9,51 +9,32 @@ const server = http.createServer((req, res) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server online port ${PORT}`));
 
-// Khởi tạo selfbot sạch sẽ, không lỗi
 const client = new Client({ checkUpdate: false });
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const GUILD_ID = '1537507317459718289';
 const CHANNEL_ID = '1559861570539102308';
 
-async function connectToVoice() {
+client.on('ready', async () => {
+    console.log(`[+] Đã đăng nhập thành công: ${client.user.tag}`);
+    
     try {
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
         if (!guild) {
-            console.log('[-]: Tài khoản chưa tham gia Server này!');
+            console.log('[-] Không tìm thấy Server!');
             return;
         }
 
         const channel = await client.channels.fetch(CHANNEL_ID).catch(() => null);
-        if (!channel) {
-            console.log('[-]: Không tìm thấy kênh voice (kiểm tra lại ID hoặc quyền xem kênh)!');
+        if (!channel || channel.type !== 'GUILD_STAGE_VOICE' && channel.type !== 'GUILD_VOICE') {
+            console.log('[-] Không tìm thấy kênh voice!');
             return;
         }
 
-        console.log(`[*]: Đang thử kết nối vào phòng voice: ${channel.name}...`);
-        
-        await client.user.voice.joinChannel(channel, {
-            selfMute: false,
-            selfDeaf: false,
-            selfVideo: false,
-        });
-
-        console.log(`[+]: Đã kết nối thành công vào phòng: ${channel.name}`);
+        await channel.join();
+        console.log(`[+] Đã kết nối vào phòng voice thành công!`);
     } catch (error) {
-        console.error('[-]: Lỗi kết nối:', error.message);
-        setTimeout(connectToVoice, 5000);
-    }
-}
-
-client.on('ready', async () => {
-    console.log(`[+]: Đã đăng nhập tài khoản: ${client.user.tag}`);
-    await connectToVoice();
-});
-
-client.on('voiceStateUpdate', (oldState, newState) => {
-    if (newState.id === client.user.id && !newState.channelId) {
-        console.log('[-]: Rớt voice, đang kết nối lại...');
-        setTimeout(connectToVoice, 2000);
+        console.log('[-] Lỗi kết nối voice:', error.message);
     }
 });
 
