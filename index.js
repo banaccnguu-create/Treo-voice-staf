@@ -9,11 +9,8 @@ const server = http.createServer((req, res) => {
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server online port ${PORT}`));
 
-// Khởi tạo selfbot với cấu hình tối ưu để bypass lỗi đứng mạng trên Cloud
-const client = new Client({
-    checkUpdate: false,
-    intents: ["GUILDS", "GUILD_VOICE_STATES"]
-});
+// Khởi tạo selfbot sạch sẽ, không lỗi
+const client = new Client({ checkUpdate: false });
 
 const TOKEN = process.env.DISCORD_TOKEN;
 const GUILD_ID = '1537507317459718289';
