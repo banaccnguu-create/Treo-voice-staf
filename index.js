@@ -1,54 +1,95 @@
 const { Client } = require('discord.js-selfbot-v13');
+const { joinVoiceChannel, getVoiceConnection } = require('@discordjs/voice');
 const http = require('http');
 
-// Server ảo giữ Render
+// Server giả lập trên Render để giữ Web Service hoạt động 24/7
 const server = http.createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/plain' });
-    res.end('Acc 2 Voice Active\n');
+    res.end('Acc Treo Voice Active\n');
 });
+
 const PORT = process.env.PORT || 3000;
 server.listen(PORT, () => console.log(`Server online port ${PORT}`));
 
 const client = new Client({ checkUpdate: false });
 
 const TOKEN = process.env.DISCORD_TOKEN;
-const GUILD_ID = '1537507317459718289';
-const CHANNEL_ID = '1559888715814412299';
 
-async function connectToVoice() {
+// ID Server & Kênh Tạo Voice từ link bạn gửi
+const GUILD_ID = process.env.GUILD_ID || "1537507317459718289";
+const CREATE_VOICE_CHANNEL_ID = process.env.CHANNEL_ID || "1542377214367244369";
+
+let currentVoiceChannelId = null; 
+let isReconnecting = false;
+
+async function joinCreateVoiceChannel() {
+    if (isReconnecting) return;
+    isReconnecting = true;
+
     try {
         const guild = await client.guilds.fetch(GUILD_ID).catch(() => null);
-        if (!guild) return console.log('[-] Tài khoản chưa tham gia Server này!');
+        if (!guild) {
+            console.log('[-] Không tìm thấy Server!');
+            isReconnecting = false;
+            return;
+        }
 
-        const channel = await client.channels.fetch(CHANNEL_ID).catch(() => null);
-        if (!channel) return console.log('[-] Không tìm thấy kênh voice (kiểm tra lại ID hoặc quyền xem kênh)!');
+        // Hủy kết nối voice cũ nếu có
+        const existingConnection = getVoiceConnection(GUILD_ID);
+        if (existingConnection) {
+            existingConnection.destroy();
+        }
 
-        await client.voice.joinChannel(channel, {
+        console.log(`[+] Đang vào kênh tạo phòng (${CREATE_VOICE_CHANNEL_ID})...`);
+
+        // Join vào kênh tạo phòng ban đầu
+        joinVoiceChannel({
+            channelId: CREATE_VOICE_CHANNEL_ID,
+            guildId: guild.id,
+            adapterCreator: guild.voiceAdapterCreator,
             selfMute: false,
             selfDeaf: false,
             selfVideo: false,
         });
 
-        console.log(`[+] Đã kết nối thành công vào phòng: ${channel.name}`);
     } catch (error) {
-        console.error('[-] Lỗi kết nối:', error.message);
+        console.error('[-] Lỗi khi vào kênh tạo voice:', error.message);
+        isReconnecting = false;
     }
 }
 
 client.on('ready', async () => {
-    console.log(`[+] Đã đăng nhập: ${client.user.tag}`);
-    await connectToVoice();
+    console.log(`[+] Đã đăng nhập tài khoản: ${client.user.tag}`);
+    await joinCreateVoiceChannel();
 });
 
+// Lắng nghe sự kiện chuyển phòng
 client.on('voiceStateUpdate', (oldState, newState) => {
-    if (newState.id === client.user.id && !newState.channelId) {
-        console.log('[!] Rớt voice, đang kết nối lại...');
-        setTimeout(connectToVoice, 2000);
+    if (newState.id !== client.user.id) return;
+
+    // Khi bot bấm vào kênh tạo phòng và được chuyển sang Voice mới
+    if (newState.channelId && newState.channelId !== CREATE_VOICE_CHANNEL_ID) {
+        currentVoiceChannelId = newState.channelId;
+        isReconnecting = false;
+        console.log(`[✔] Đã tự động chuyển sang Voice mới [ID: ${currentVoiceChannelId}] và đang đứng yên tại đây!`);
+        return;
+    }
+
+    // Khi bị ngắt kết nối voice hoàn toàn
+    if (!newState.channelId) {
+        console.log('[-] Bị ngắt kết nối Voice! Sẽ tự động bấm lại kênh tạo phòng sau 5 giây...');
+        currentVoiceChannelId = null;
+        isReconnecting = false;
+
+        setTimeout(() => {
+            joinCreateVoiceChannel();
+        }, 5000);
     }
 });
 
+// Ping giữ kết nối WebSocket
 setInterval(() => {
-    if (client.ws) client.ws.ping;
+    if (client.ws) client.ws.ping();
 }, 15000);
 
 client.login(TOKEN);
