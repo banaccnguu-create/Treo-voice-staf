@@ -87,9 +87,11 @@ client.on('voiceStateUpdate', (oldState, newState) => {
     }
 });
 
-// Ping giữ kết nối WebSocket
+// Giữ kết nối (Check ping an toàn không gây crash code)
 setInterval(() => {
-    if (client.ws) client.ws.ping();
-}, 15000);
+    if (client.ws && client.ws.ping) {
+        console.log(`[Ping] WebSocket Ping: ${client.ws.ping}ms`);
+    }
+}, 30000);
 
 client.login(TOKEN);
